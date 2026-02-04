@@ -35,7 +35,7 @@ namespace Lesson_3.Middleware
             var currency = rates.FirstOrDefault(r => r.CurrencyCode == code);
             if (currency == null)
             {
-                await context.Response.WriteAsync("Currency not found");
+                context.Response.StatusCode = StatusCodes.Status404NotFound;
                 return;
             }
             await context.Response.WriteAsJsonAsync(currency);

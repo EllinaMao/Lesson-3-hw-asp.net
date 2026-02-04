@@ -12,11 +12,6 @@ namespace Lesson_3.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            if (!context.Request.Path.StartsWithSegments("/convertCurrency"))
-            {
-                await _next(context);
-                return;
-            }
             var rates = context.Items["Rates"] as List<IDto>;
             if (rates == null)
             {

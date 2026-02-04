@@ -18,7 +18,7 @@ namespace Lesson_3.Middleware
             {
                 await _next(context);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 await HandleErrorHtmlAsync(context);
