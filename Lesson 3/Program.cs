@@ -14,7 +14,8 @@ app.UseMiddleware<ExchangeMiddleware>();
 
 app.Run(async context =>
 {
-    await context.Response.WriteAsync("Try these links:\n/exchangeRate/USD\n/convertCurrency/USD/EUR/100");
+    context.Response.StatusCode = StatusCodes.Status404NotFound;
+    await Task.CompletedTask;
 });
 
 app.Run();
