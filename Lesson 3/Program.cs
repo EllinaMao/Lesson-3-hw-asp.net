@@ -107,9 +107,8 @@ app.Map("/convertCurrency", convertApp =>
     });
 });
 
-app.Map("/", async (context) =>
-{
-    context.Response.ContentType = "text/html";
+app.Map("/", async (context) => {
+    context.Response.ContentType = "text/html; charset=utf-8"; 
     string htmlPage = @"
         <!DOCTYPE html>
         <html lang='ru'>
@@ -123,14 +122,14 @@ app.Map("/", async (context) =>
                 <h1>Welcome to the Currency Exchange API</h1>
                 <p>Use the following endpoints:</p>
                 <ul>
-                    <li>/exchangeRate/CURRENCY_CODE - Get exchange rate for a specific currency (e.g., /exchangeRate/USD/EUR)</li>
-                    <li>/convertCurrency/FROM/TO/AMOUNT - Convert amount from one currency to another (e.g., /convertCurrency/USD/EUR/100)</li>
+                    <li>/exchangeRate/CURRENCY_CODE - Get exchange rate (e.g., /exchangeRate/USD)</li>
+                    <li>/convertCurrency/FROM/TO/AMOUNT - Convert currency (e.g., /convertCurrency/USD/EUR/100)</li>
                 </ul>
             </div>
         </body>
         </html>";
 
-
+    await context.Response.WriteAsync(htmlPage);
 });
 
 app.Run(async context =>
