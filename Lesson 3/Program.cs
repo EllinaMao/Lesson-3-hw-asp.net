@@ -22,37 +22,69 @@ app.Use(async (context, next) =>
         await context.Response.WriteAsJsonAsync(new { error = "Internal Server Error" });
     }
 });
+app.Map("/currencies", async (ICurrencyService service) =>
+{
+    var rates = await service.GetRatesAsync();
+    return Results.Json(rates);
+});
 
 app.Map("/exchangeRate", exchangeApp =>
 {
     exchangeApp.Run(async context =>
     {
         var path = context.Request.Path.Value;
-        var parts = path?.Split('/', StringSplitOptions.RemoveEmptyEntries); 
+        var parts = path?.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
         if (parts == null || parts.Length < 1)
         {
             context.Response.StatusCode = 400;
-            await context.Response.WriteAsJsonAsync(new { error = "Invalid currency parameters" });
+            await context.Response.WriteAsJsonAsync(new { error = "Usage: /exchangeRate/CURRENCY or /exchangeRate/FROM/TO" });
             return;
         }
-
-        string currencyCode = parts[0].ToUpper();
-
 
         var service = context.RequestServices.GetRequiredService<ICurrencyService>();
         var rates = await service.GetRatesAsync();
 
-        var currency = rates.FirstOrDefault(r => r.CurrencyCode == currencyCode);
 
-        if (currency == null)
+        if (parts.Length == 1)
         {
-            context.Response.StatusCode = 404;
-            await context.Response.WriteAsJsonAsync(new { error = "Currency not found" });
-            return;
+            string currencyCode = parts[0].ToUpper();
+            var currency = rates.FirstOrDefault(r => r.CurrencyCode == currencyCode);
+
+            if (currency == null)
+            {
+                context.Response.StatusCode = 404;
+                await context.Response.WriteAsJsonAsync(new { error = "Currency not found" });
+                return;
+            }
+
+            await context.Response.WriteAsJsonAsync(currency);
         }
 
-        await context.Response.WriteAsJsonAsync(currency);
+        else if (parts.Length >= 2)
+        {
+            string from = parts[0].ToUpper();
+            string to = parts[1].ToUpper();
+
+            decimal rateFrom = from == "UAH" ? 1 : rates.FirstOrDefault(r => r.CurrencyCode == from)?.Rate ?? 0;
+            decimal rateTo = to == "UAH" ? 1 : rates.FirstOrDefault(r => r.CurrencyCode == to)?.Rate ?? 0;
+
+            if (rateFrom == 0 || rateTo == 0)
+            {
+                context.Response.StatusCode = 404;
+                await context.Response.WriteAsJsonAsync(new { error = "Currency not found" });
+                return;
+            }
+
+            decimal exchangeRate = rateFrom / rateTo;
+
+            await context.Response.WriteAsJsonAsync(new
+            {
+                From = from,
+                To = to,
+                Rate = Math.Round(exchangeRate, 4)
+            });
+        }
     });
 });
 
@@ -108,7 +140,7 @@ app.Map("/convertCurrency", convertApp =>
 });
 
 app.Map("/", async (context) => {
-    context.Response.ContentType = "text/html; charset=utf-8"; 
+    context.Response.ContentType = "text/html; charset=utf-8";
     string htmlPage = @"
         <!DOCTYPE html>
         <html lang='ru'>
@@ -119,23 +151,19 @@ app.Map("/", async (context) => {
         </head>
         <body>
             <div>
-                <h1>Welcome to the Currency Exchange API</h1>
+                <h1>Homework</h1>
                 <p>Use the following endpoints:</p>
                 <ul>
-                    <li>/exchangeRate/CURRENCY_CODE - Get exchange rate (e.g., /exchangeRate/USD)</li>
-                    <li>/convertCurrency/FROM/TO/AMOUNT - Convert currency (e.g., /convertCurrency/USD/EUR/100)</li>
+                    <li><strong>/currencies</strong> - Get list of all supported currencies</li>
+                    <li><strong>/exchangeRate/CURRENCY</strong> - Get info for one currency (e.g., /exchangeRate/USD)</li>
+                    <li><strong>/exchangeRate/FROM/TO</strong> - Get exchange rate between two currencies (e.g., /exchangeRate/USD/EUR)</li>
+                    <li><strong>/convertCurrency/FROM/TO/AMOUNT</strong> - Convert specific amount (e.g., /convertCurrency/USD/EUR/100)</li>
                 </ul>
             </div>
         </body>
         </html>";
 
     await context.Response.WriteAsync(htmlPage);
-});
-
-app.Run(async context =>
-{
-    context.Response.StatusCode = 404;
-    await context.Response.WriteAsJsonAsync(new { error = "Page not found" });
 });
 
 app.Run();
